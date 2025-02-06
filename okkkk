@@ -1,0 +1,17 @@
+context 'when managing MySQL directories' do
+    let(:dirs) do
+      [
+        '/local/u01', '/local/u01/mysql',
+        '/local/u02', '/local/u02/mysql',
+        '/local/u03', '/local/u03/mysql',
+        '/local/u04', '/local/u04/mysql',
+        '/local/u05', '/local/u05/mysql'
+      ]
+    end
+
+    it { is_expected.to compile }
+
+    dirs.each do |dir|
+      it { is_expected.to contain_file(dir).with(ensure: 'directory', mode: '0755') }
+    end
+  end
