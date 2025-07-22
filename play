@@ -1,0 +1,59 @@
+class check_mk_agent::remove {
+  # Stop and disable check-mk-agent socket
+  service { 'check-mk-agent.socket':
+    ensure   => stopped,
+    enable   => false,
+  }
+
+  # Remove packages
+  package { ['cmkupdate', 'check-mk-agent']:
+    ensure => absent,
+  }
+
+  # Remove cron jobs
+  case $facts['os']['family'] {
+    'RedHat', 'CentOS', 'Rocky': {
+      exec { 'remove_cmkupdate_cronjob_redhat':
+        command => 'sed -i "/cmkupdate/d" /var/spool/cron/root',
+        onlyif  => 'grep -q cmkupdate /var/spool/cron/root',
+      }
+    }
+    'Suse': {
+      exec { 'remove_cmkupdate_cronjob_suse':
+        command => 'sed -i "/cmkupdate/d" /var/spool/cron/tabs/root',
+        onlyif  => 'grep -q cmkupdate /var/spool/cron/tabs/root',
+      }
+    }
+    'Debian': {
+      exec { 'remove_cmkupdate_cronjob_debian':
+        command => 'sed -i "/cmkupdate/d" /var/spool/cron/crontabs/root',
+        onlyif  => 'grep -q cmkupdate /var/spool/cron/crontabs/root',
+      }
+    }
+  }
+
+  # Remove xinetd configuration
+  file { '/etc/xinetd.d/check-mk-agent':
+    ensure => absent,
+  }
+
+  # Restart xinetd service
+  service { 'xinetd':
+    ensure   => running,
+    enable   => true,
+    subscribe => File['/etc/xinetd.d/check-mk-agent'],
+  }
+
+  # Remove directories
+  file { ['/etc/check_mk', '/var/lib/check_mk_agent', '/usr/lib/check_mk_agent']:
+    ensure => absent,
+    recurse => true,
+    force   => true,
+  }
+
+  # Kill any remaining check_mk processes
+  exec { 'kill_check_mk_processes':
+    command     => 'pkill -9 -f check_mk',
+    refreshonly => true,
+  }
+}
