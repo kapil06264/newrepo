@@ -1,0 +1,146 @@
+class checkmk::agent_setup (
+  String $api_url           = 'https://api-prod.monitor.gic.ericsson.se/api/1.0/get site info',
+  String $hostname          = $facts['fqdn'],
+  String $env               = 'lab',
+  String $format            = 'json',
+  String $cmk_user          = 'cmkadmin',
+  String $cmk_password      = 'REPLACE_ME',
+  String $venella_pkg       = 'venella-agent',
+  String $baked_agent_path  = '/usr/local/bin/check-mk-agent',
+  String $baked_agent_url   = 'https://checkmk.example.com/downloads/baked-agent.rpm',
+) {
+
+  $response_file = '/var/lib/checkmk_api_response'
+
+  package { 'curl':
+    ensure => installed,
+  }
+
+  # Step 1: Fetch CMK API response (only if host exists not yet confirmed)
+  exec { 'fetch_cmk_api_response':
+    command => "/usr/bin/curl -s '${api_url}?host=${hostname}&env=${env}&format=${format}' > ${response_file}",
+    onlyif  => "/bin/bash -c '! grep -q \"\\\"host exists\\\": true\" ${response_file}'",
+    path    => ['/bin', '/usr/bin'],
+    require => Package['curl'],
+  }
+
+  # Step 2: Remove legacy Check_MK 1.6 agent (only if host exists is true)
+  exec { 'remove_legacy_checkmk_1_6':
+    command => '/bin/true',  # dummy to notify internal steps
+    onlyif  => "grep -q '\"host exists\": true' ${response_file}",
+    notify  => [
+      Service['check-mk-agent.socket'],
+      Package['cmkupdate'],
+      Package['check-mk-agent'],
+      Exec['remove_cmkupdate_cronjob_redhat'],
+      Exec['remove_cmkupdate_cronjob_suse'],
+      Exec['remove_cmkupdate_cronjob_debian'],
+      File['/etc/xinetd.d/check-mk-agent'],
+      Service['xinetd'],
+      File['checkmk_old_dirs'],
+      Exec['kill_check_mk_processes'],
+    ],
+    require => Exec['fetch_cmk_api_response'],
+    path    => ['/bin', '/usr/bin'],
+  }
+
+  # Legacy 1.6 removal steps (defined inline)
+  service { 'check-mk-agent.socket':
+    ensure => stopped,
+    enable => false,
+  }
+
+  package { ['cmkupdate', 'check-mk-agent']:
+    ensure => absent,
+  }
+
+  case $facts['os']['family'] {
+    'RedHat', 'CentOS', 'Rocky': {
+      exec { 'remove_cmkupdate_cronjob_redhat':
+        command => 'sed -i "/cmkupdate/d" /var/spool/cron/root',
+        onlyif  => 'grep -q cmkupdate /var/spool/cron/root',
+      }
+    }
+    'Suse': {
+      exec { 'remove_cmkupdate_cronjob_suse':
+        command => 'sed -i "/cmkupdate/d" /var/spool/cron/tabs/root',
+        onlyif  => 'grep -q cmkupdate /var/spool/cron/tabs/root',
+      }
+    }
+    'Debian': {
+      exec { 'remove_cmkupdate_cronjob_debian':
+        command => 'sed -i "/cmkupdate/d" /var/spool/cron/crontabs/root',
+        onlyif  => 'grep -q cmkupdate /var/spool/cron/crontabs/root',
+      }
+    }
+    default: { }
+  }
+
+  file { '/etc/xinetd.d/check-mk-agent':
+    ensure => absent,
+  }
+
+  service { 'xinetd':
+    ensure    => running,
+    enable    => true,
+    subscribe => File['/etc/xinetd.d/check-mk-agent'],
+  }
+
+  file { 'checkmk_old_dirs':
+    path     => ['/etc/check_mk', '/var/lib/check_mk_agent', '/usr/lib/check_mk_agent'],
+    ensure   => absent,
+    recurse  => true,
+    force    => true,
+  }
+
+  exec { 'kill_check_mk_processes':
+    command     => 'pkill -9 -f check_mk',
+    refreshonly => true,
+  }
+
+  # Step 3: Install Venella agent package (required for TLS registration)
+  package { $venella_pkg:
+    ensure  => installed,
+    require => Exec['remove_legacy_checkmk_1_6'],
+  }
+
+  # Step 4: TLS registration (only if host exists and TLS not done)
+  exec { 'cmk_tls_registration':
+    command => "/bin/bash -c '\
+      SERVER=$(grep -oP '\"fqdn\"\\s*:\\s*\"\\K[^\"]+' ${response_file}); \
+      SITE=$(grep -oP '\"site\"\\s*:\\s*\"\\K[^\"]+' ${response_file}); \
+      /usr/bin/cmk-agent-ctl tls-register \
+        --server \$SERVER \
+        --site \$SITE \
+        --user ${cmk_user} \
+        --password ${cmk_password}'",
+    onlyif  => "/bin/grep -q '\"host exists\": true' ${response_file}",
+    unless  => "/usr/bin/cmk-agent-ctl status | grep -q 'TLS connection established'",
+    require => Package[$venella_pkg],
+    path    => ['/bin', '/usr/bin'],
+  }
+
+  # Step 5: Check if baked agent is present (trigger install if missing)
+  exec { 'check_baked_agent':
+    command => '/bin/true',
+    onlyif  => "test ! -f ${baked_agent_path}",
+    notify  => Exec['install_baked_agent'],
+    path    => ['/bin', '/usr/bin'],
+  }
+
+  # Step 6: Install baked agent from URL
+  exec { 'install_baked_agent':
+    command     => "/usr/bin/curl -s -o /tmp/baked-agent.rpm '${baked_agent_url}' && /usr/bin/rpm -Uvh /tmp/baked-agent.rpm",
+    refreshonly => true,
+    path        => ['/bin', '/usr/bin'],
+    notify      => Exec['cmk_update_registration'],
+  }
+
+  # Step 7: CMK update registration after baked agent
+  exec { 'cmk_update_registration':
+    command     => '/usr/bin/cmk-agent-ctl update-registration',
+    refreshonly => true,
+    path        => ['/bin', '/usr/bin'],
+  }
+
+}
