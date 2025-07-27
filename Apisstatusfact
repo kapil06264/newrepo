@@ -1,0 +1,23 @@
+# frozen_string_literal: true
+require 'json'
+
+Facter.add(:checkmk_status) do
+  confine { File.exist?('/var/lib/checkmk_api_response') }
+
+  setcode do
+    begin
+      file_path = '/var/lib/checkmk_api_response'
+      content = File.read(file_path)
+      data = JSON.parse(content)
+
+      {
+        'host_exists' => data['host_exists'],
+        'fqdn'        => data['fqdn'],
+        'site'        => data['site']
+      }
+    rescue => e
+      Facter.debug("checkmk_status fact error: #{e.message}")
+      nil
+    end
+  end
+end
