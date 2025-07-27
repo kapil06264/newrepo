@@ -1,0 +1,21 @@
+Facter.add(:check_mk_legacy_version) do
+  setcode do
+    os_family = Facter.value(:os)['family']
+
+    version = case os_family
+              when 'RedHat', 'Suse'
+                Facter::Util::Resolution.exec('rpm -q --qf "%{VERSION}\n" check-mk-agent 2>/dev/null')
+              when 'Debian'
+                Facter::Util::Resolution.exec("dpkg-query -W -f='${Version}' check-mk-agent 2>/dev/null")
+              else
+                nil
+              end
+
+    if version && version != ''
+      major = version.split('.').first.to_i
+      major < 2
+    else
+      nil
+    end
+  end
+end
