@@ -1,0 +1,25 @@
+Facter.add('check_mk_agent_type') do
+  confine :kernel => 'Linux'
+
+  setcode do
+    if Facter::Core::Execution.which('rpm')
+      if Facter::Core::Execution.execute('rpm -q check-mk-agent-ng', {on_fail: nil})
+        'ng'
+      elsif Facter::Core::Execution.execute('rpm -q check-mk-agent', {on_fail: nil})
+        'legacy'
+      else
+        'not_installed'
+      end
+    elsif Facter::Core::Execution.which('dpkg')
+      if Facter::Core::Execution.execute('dpkg -s check-mk-agent-ng', {on_fail: nil})
+        'ng'
+      elsif Facter::Core::Execution.execute('dpkg -s check-mk-agent', {on_fail: nil})
+        'legacy'
+      else
+        'not_installed'
+      end
+    else
+      'unknown'
+    end
+  end
+end
