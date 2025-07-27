@@ -1,0 +1,22 @@
+case $facts['os']['family'] {
+  'RedHat', 'Suse': {
+      exec { 'remove_check_mk_ng_rpm':
+        command => '/bin/rpm -e check-mk-agent-ng',
+        onlyif  => '/bin/rpm -q check-mk-agent-ng',
+        path    => ['/bin', '/usr/bin'],
+      }
+    }
+
+    'Debian': {
+      exec { 'remove_check_mk_ng_dpkg':
+        command => '/usr/bin/dpkg --remove check-mk-agent-ng',
+        onlyif  => '/usr/bin/dpkg -s check-mk-agent-ng',
+        path    => ['/bin', '/usr/bin'],
+      }
+    }
+
+    default: {
+      notify { 'OS not supported for check-mk-agent-ng removal.': }
+    }
+  }
+}
