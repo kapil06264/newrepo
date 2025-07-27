@@ -1,0 +1,6 @@
+Facter.add(:check_mk_legacy_version) do
+  setcode do
+    version = Facter::Util::Resolution.exec('check_mk_agent --version')
+    version.split[3].split('.').first.to_i < 2
+  end
+end
