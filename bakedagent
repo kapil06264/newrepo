@@ -1,0 +1,17 @@
+$package_name = $facts['os']['family'] ? {
+  'Debian' => 'check-mk-agent.deb',
+  'RedHat' => 'check-mk-agent.rpm',
+  default  => undef,
+}
+
+$download_url = "https://your-checkmk-server/${facts['checkmk_status']['site']}/check_mk/agents/${package_name}"
+$target_path  = "/opt/checkmk/${package_name}"
+
+if $package_name {
+  exec { 'download_checkmk_agent':
+    command => "curl -o ${target_path} ${download_url}",
+    creates => $target_path,
+    path    => ['/usr/bin', '/bin'],
+    user    => 'root',
+  }
+}
