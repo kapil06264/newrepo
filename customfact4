@@ -1,0 +1,23 @@
+Facter.add(:check_mk_agent_type) do
+  setcode do
+    case Facter.value(:os)['family']
+    when 'RedHat'
+      legacy_code = Facter::Util::Resolution.exec('rpm -q check-mk-agent ; echo $?').to_i
+      ng_code     = Facter::Util::Resolution.exec('rpm -q check-mk-agent-ng ; echo $?').to_i
+    when 'Debian'
+      legacy_code = Facter::Util::Resolution.exec('dpkg -s check-mk-agent >/dev/null 2>&1 ; echo $?').to_i
+      ng_code     = Facter::Util::Resolution.exec('dpkg -s check-mk-agent-ng >/dev/null 2>&1 ; echo $?').to_i
+    else
+      legacy_code = 1
+      ng_code = 1
+    end
+
+    if ng_code == 0
+      'ng'
+    elsif legacy_code == 0
+      'legacy'
+    else
+      'none'
+    end
+  end
+end
