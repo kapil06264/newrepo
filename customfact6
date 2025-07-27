@@ -1,0 +1,30 @@
+Facter.add('check_mk_agent_type') do
+  confine :kernel => 'Linux'
+
+  setcode do
+    os_family = Facter.value(:os)['family']
+
+    case os_family
+    when 'RedHat', 'Suse'
+      if system('rpm -q check-mk-agent-ng > /dev/null 2>&1')
+        'ng'
+      elsif system('rpm -q check-mk-agent > /dev/null 2>&1')
+        'legacy'
+      else
+        'not_installed'
+      end
+
+    when 'Debian'
+      if system('dpkg -s check-mk-agent-ng > /dev/null 2>&1')
+        'ng'
+      elsif system('dpkg -s check-mk-agent > /dev/null 2>&1')
+        'legacy'
+      else
+        'not_installed'
+      end
+
+    else
+      'unsupported_os'
+    end
+  end
+end
