@@ -1,0 +1,38 @@
+class check_mk_agent {
+  $api_url      = 'https://your.checkmk.server'
+  $api_username = 'your-api-username'
+  $api_password = 'your-api-password'
+  $host_name    = $facts['networking']['fqdn']
+
+  case $facts['os']['family'] {
+    'RedHat', 'Suse': {
+      $package_path  = '/tmp/agent_test.rpm'
+      $os_type       = 'linux_rpm'
+      $install_cmd   = "rpm -i ${package_path}"
+    }
+    'Debian': {
+      $package_path  = '/tmp/agent_test.deb'
+      $os_type       = 'linux_deb'
+      $install_cmd   = "dpkg -i ${package_path}"
+    }
+    default: {
+      fail("Unsupported OS family: ${facts['os']['family']}")
+    }
+  }
+
+  $download_url = "${api_url}/api/1.0/domain-types/agent/actions/download_by_host/invoke?host_name=${host_name}&os_type=${os_type}&agent_type=host"
+
+  exec { 'download_check_mk_agent':
+    command => "curl -s -k -u ${api_username}:${api_password} -H 'accept: application/octet-stream' -o ${package_path} '${download_url}'",
+    path    => '/usr/bin:/usr/sbin:/bin',
+    creates => $package_path,
+    timeout => 300,
+  }
+
+  exec { 'install_check_mk_agent':
+    command     => $install_cmd,
+    path        => '/usr/bin:/usr/sbin:/bin',
+    refreshonly => true,
+    subscribe   => Exec['download_check_mk_agent'],
+  }
+}
