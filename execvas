@@ -1,0 +1,5 @@
+types::execs:
+  update_vas_conf:
+    command: "/opt/quest/bin/vastool flush users && touch /var/tmp/.vas_conf_flushed"
+    path: "/usr/bin:/bin"
+    onlyif: "test /etc/opt/quest/vas/vas.conf -nt /var/tmp/.vas_conf_flushed"
