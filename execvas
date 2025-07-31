@@ -9,3 +9,4 @@ test ! -f /var/tmp/.vas_conf_flushed || test /etc/opt/quest/vas/vas.conf -nt /va
 onlyif: "test ! -f /var/tmp/.vas_conf_flushed || test /etc/opt/quest/vas/vas.conf -nt /var/tmp/.vas_conf_flushed"
 
 onlyif: 'grep -q "workstation-mode-users-preload" /etc/opt/quest/vas/vas.conf && test ! -f /var/tmp/.vas_conf_flushed || test /etc/opt/quest/vas/vas.conf -nt /var/tmp/.vas_conf_flushed'
+onlyif: '(grep -q "workstation-mode-users-preload" /etc/opt/quest/vas/vas.conf && test ! -f /var/tmp/.vas_conf_flushed) || test /etc/opt/quest/vas/vas.conf -nt /var/tmp/.vas_conf_flushed'
