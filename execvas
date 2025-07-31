@@ -15,4 +15,4 @@ types::execs:
   update_vas_conf:
     command: "/opt/quest/bin/vastool flush users && touch /var/tmp/.vas_conf_flushed"
     path: "/usr/bin:/bin"
-    onlyif: '(/bin/grep -q "workstation-mode-users-preload" /etc/opt/quest/vas/vas.conf && (! /usr/bin/test -f /var/tmp/.vas_conf_flushed || /usr/bin/test /etc/opt/quest/vas/vas.conf -nt /var/tmp/.vas_conf_flushed))'
+    onlyif: '(/bin/grep -q "workstation-mode-users-preload" /etc/opt/quest/vas/vas.conf && ! /usr/bin/test -f /var/tmp/.vas_conf_flushed) || /usr/bin/test /etc/opt/quest/vas/vas.conf -nt /var/tmp/.vas_conf_flushed'
