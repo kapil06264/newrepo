@@ -1,0 +1,30 @@
+$file_path = '/tmp/site_info.json'
+
+# Try to read the file (returns undef if not found)
+$site_info_json = file($file_path, 'ignore')
+
+# Parse JSON only if file exists
+$site_info_hash = $site_info_json ? {
+  undef   => {},
+  default => parsejson($site_info_json),
+}
+
+$status_ok = $site_info_hash['status'] == 200
+
+# Decide whether to call the function (either file doesn't exist or status != 200)
+if $site_info_json == undef or !$status_ok {
+  notice("Calling get_site_info function because file missing or status is not 200")
+
+  $new_info_hash = get_site_info($facts['networking']['fqdn'], 'api-prod.monitor.gic.ericsson.se')
+  $new_info_json = to_json($new_info_hash)
+
+  file { $file_path:
+    ensure  => file,
+    content => $new_info_json,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+  }
+} else {
+  notice("Valid site info already exists in ${file_path}, skipping API call.")
+}
