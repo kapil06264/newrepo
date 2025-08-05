@@ -1,0 +1,44 @@
+# get_site_info.rb
+
+require 'puppet'
+require 'net/http'
+require 'uri'
+require 'json'
+
+Puppet::Functions.create_function(:get_site_info) do
+  dispatch :fetch_site_info do
+    param 'String', :fqdn
+    param 'String', :base_url
+  end
+
+  def fetch_site_info(fqdn, base_url)
+    # Construct the full URL
+    uri = URI.parse("https://#{base_url}/api/1.0/get_site_info?host_name=#{fqdn}&env=lab&format=json")
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE  # Optional: disable SSL verify (not recommended for prod)
+
+    request = Net::HTTP::Get.new(uri.request_uri)
+
+    response = http.request(request)
+
+    begin
+      json = JSON.parse(response.body)
+
+      {
+        'status' => json['status'],
+        'site'   => json['site'] || '',
+        'fqdn'   => json['fqdn'] || fqdn,
+        'message' => json['message'] || 'No message returned'
+      }
+    rescue => e
+      {
+        'status'  => response.code.to_i,
+        'site'    => '',
+        'fqdn'    => fqdn,
+        'message' => "Failed to parse response: #{e.message}"
+      }
+    end
+  end
+end
