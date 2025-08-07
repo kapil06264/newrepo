@@ -1,0 +1,143 @@
+kapil@kapil MINGW64 ~/puppet-nginx-check (master)
+$ git pull
+Already up to date.
+
+kapil@kapil MINGW64 ~/puppet-nginx-check (master)
+$ git checkout henrik_suggestions
+error: pathspec 'henrik_suggestions' did not match any file(s) known to git
+
+kapil@kapil MINGW64 ~/puppet-nginx-check (master)
+$ git checkout -b henrik_suggestions
+Switched to a new branch 'henrik_suggestions'
+
+kapil@kapil MINGW64 ~/puppet-nginx-check (henrik_suggestions)
+$ bundle config --local path ./vendor/bundle
+
+kapil@kapil MINGW64 ~/puppet-nginx-check (henrik_suggestions)
+$ bundle install
+Bundle complete! 8 Gemfile dependencies, 180 gems now installed.
+Bundled gems are installed into `./vendor/bundle`
+
+kapil@kapil MINGW64 ~/puppet-nginx-check (henrik_suggestions)
+$ bundle exec rake strings:generate:reference
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/io-event-1.11.2/lib/io/event/support.rb:48: warning: IO::Buffer is experimental and both the Ruby and C interface may change in the future!
+Files                     36
+Modules                   0 (0 undocumented)
+Classes                   0 (0 undocumented)
+Constants                 0 (0 undocumented)
+Attributes                0 (0 undocumented)
+Methods                   0 (0 undocumented)
+Puppet Classes            7 (0 undocumented)
+Puppet Data Types         0 (0 undocumented)
+Puppet Data Type Aliases  20 (0 undocumented)
+Puppet Defined Types      9 (0 undocumented)
+Puppet Providers          0 (0 undocumented)
+Puppet Types              0 (0 undocumented)
+Puppet Tasks              0 (0 undocumented)
+Puppet Functions          0 (0 undocumented)
+Puppet Plans              0 (0 undocumented)
+ 100.00% documented
+
+kapil@kapil MINGW64 ~/puppet-nginx-check (henrik_suggestions)
+$ bundle exec rake validate lint check
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/io-event-1.11.2/lib/io/event/support.rb:48: warning: IO::Buffer is experimental and both the Ruby and C interface may change in the future!
+ruby -c lib/facter/nginx_version.rb
+Syntax OK
+---> syntax:manifests
+---> syntax:templates
+---> syntax:hiera:yaml
+Files                     36
+Modules                   0 (0 undocumented)
+Classes                   0 (0 undocumented)
+Constants                 0 (0 undocumented)
+Attributes                0 (0 undocumented)
+Methods                   0 (0 undocumented)
+Puppet Classes            7 (0 undocumented)
+Puppet Data Types         0 (0 undocumented)
+Puppet Data Type Aliases  20 (0 undocumented)
+Puppet Defined Types      9 (0 undocumented)
+Puppet Types              0 (0 undocumented)
+Puppet Providers          0 (0 undocumented)
+Puppet Functions          0 (0 undocumented)
+Puppet Tasks              0 (0 undocumented)
+Puppet Plans              0 (0 undocumented)
+ 100.00% documented
+WARNING: lint:ignore:strict_indent comment on line 6 with no closing lint:endignore comment
+Whoops! It looks like puppet-lint has encountered an error that it doesn't
+know how to handle. Please open an issue at https://github.com/puppetlabs/puppet-lint
+and paste the following output into the issue description.
+---
+puppet-lint version: 4.3.0
+ruby version: 3.2.2-p53
+platform: x64-mingw-ucrt
+file path: examples/snippet.pp
+file contents:
+```
+class { 'nginx':
+  snippets_dir => '/etc/nginx/snippets',
+}
+
+# https://github.com/relud/puppet-lint-strict_indent-check/issues/20
+# lint:ignore:strict_indent
+$snippet = @("SNIPPET"/L)
+location @custom_451_error {
+  return 451;
+}
+| SNIPPET
+# lint:endignore
+nginx::resource::snippet { 'test_snippet':
+  raw_content => $snippet,
+}
+
+nginx::resource::server { 'test.local:8080':
+  ensure        => present,
+  listen_port   => 8080,
+  server_name   => ['test.local test'],
+  include_files => ["${nginx::snippets_dir}/test_snippet.conf"],
+  try_files     => ['non-existant', '@custom_451_error'],
+}
+
+nginx::resource::server { 'test.local:8081':
+  ensure        => present,
+  listen_port   => 8081,
+  server_name   => ['test.local test'],
+  include_files => ["${nginx::snippets_dir}/test_snippet.conf"],
+  try_files     => ['non-existant', '@custom_451_error'],
+}
+
+```
+error:
+```
+NoMethodError: undefined method `prev_token' for nil:NilClass
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-strict_indent-check-3.0.0/lib/puppet-lint/plugins/check_strict_indent.rb:132:in `block in check'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-strict_indent-check-3.0.0/lib/puppet-lint/plugins/check_strict_indent.rb:49:in `each'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-strict_indent-check-3.0.0/lib/puppet-lint/plugins/check_strict_indent.rb:49:in `check'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-4.3.0/lib/puppet-lint/checkplugin.rb:21:in `run'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-4.3.0/lib/puppet-lint/checks.rb:71:in `block in run'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-4.3.0/lib/puppet-lint/checks.rb:68:in `each'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-4.3.0/lib/puppet-lint/checks.rb:68:in `run'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-4.3.0/lib/puppet-lint.rb:226:in `run'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-4.3.0/lib/puppet-lint/tasks/puppet-lint.rb:86:in `block (3 levels) in define'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-4.3.0/lib/puppet-lint/tasks/puppet-lint.rb:82:in `each'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-4.3.0/lib/puppet-lint/tasks/puppet-lint.rb:82:in `block (2 levels) in define'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/file_utils_ext.rb:58:in `verbose'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/puppet-lint-4.3.0/lib/puppet-lint/tasks/puppet-lint.rb:75:in `block in define'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/task.rb:281:in `block in execute'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/task.rb:281:in `each'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/task.rb:281:in `execute'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/task.rb:219:in `block in invoke_with_call_chain'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/task.rb:199:in `synchronize'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/task.rb:199:in `invoke_with_call_chain'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/task.rb:188:in `invoke'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/application.rb:188:in `invoke_task'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/application.rb:138:in `block (2 levels) in top_level'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/application.rb:138:in `each'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/application.rb:138:in `block in top_level'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/application.rb:147:in `run_with_threads'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/application.rb:132:in `top_level'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/application.rb:83:in `block in run'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/application.rb:214:in `standard_exception_handling'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/lib/rake/application.rb:80:in `run'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/gems/rake-13.3.0/exe/rake:27:in `<top (required)>'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/bin/rake:25:in `load'
+C:/Users/kapil/puppet-nginx-check/vendor/bundle/ruby/3.2.0/bin/rake:25:in `<main>'
