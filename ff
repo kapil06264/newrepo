@@ -1,0 +1,39 @@
+CrowdStrike Falcon Sensor (also known as the Falcon agent) supports CID tags, proxy_host, and proxy_port settings to configure how the agent communicates with the Falcon cloud and how it's logically grouped. Here's how each is used:
+
+✅ 1. CID Tags (Customer ID Tags)
+Purpose: CID tags associate the sensor (agent) with a specific customer tenant in the CrowdStrike cloud.
+
+Usage: CID is mandatory for sensor installation and registration.
+
+Format: It's a unique identifier like 0123456789abcdef0123456789abcdef-12.
+
+💡 How it works:
+When installing the sensor, the CID tag ensures the sensor connects to the correct Falcon cloud instance.
+
+It's passed via the installer or used during sensor provisioning.
+
+Example (Linux):
+
+bash
+Copy
+Edit
+sudo ./FalconSensorInstaller.run --cid=0123456789abcdef0123456789abcdef-12
+On Windows (PowerShell):
+
+powershell
+Copy
+Edit
+msiexec /i "WindowsSensorSetup.msi" /quiet CID=0123456789abcdef0123456789abcdef-12
+✅ 2. Proxy Settings (proxy_host, proxy_port)
+Purpose: If the system does not have direct internet access, you can configure a proxy.
+
+Keys:
+
+proxy_host: The hostname or IP of the proxy server.
+
+proxy_port: The TCP port on which the proxy listens (e.g., 8080).
+
+💡 How it works:
+The Falcon sensor uses these settings to route its telemetry and heartbeat traffic through the proxy to the Falcon cloud.
+
+Authentication is also supported with proxy_user and proxy_password.
