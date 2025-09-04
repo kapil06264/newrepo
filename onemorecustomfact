@@ -1,0 +1,11 @@
+Facter.add(:check_mk_legacy_version) do
+  setcode do
+    result = if ['RedHat', 'Suse'].include?(Facter.value(:os)['family'])
+               Facter::Util::Resolution.exec("rpm -q --qf '%{VERSION}\n' check-mk-agent 2>/dev/null | grep '^1.6'")
+             else
+               Facter::Util::Resolution.exec("dpkg-query -W -f='${Status} ${Version}\n' check-mk-agent 2>/dev/null | grep 'install ok installed 1.6'")
+             end
+
+    !result.nil? && !result.empty?
+  end
+end
