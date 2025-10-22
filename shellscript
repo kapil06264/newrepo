@@ -25,3 +25,35 @@ NEW_RELEASE=$(rpm -q --queryformat '%{release}' check-mk-agent)
   chmod -R 755 /usr/lib/check_mk_agent/sudo/*
   echo "Permissions updated"
 } || echo "No change in release version: $RELEASE"
+
+
+bash
+#!/bin/bash
+
+# Check if rpm is available (for Red Hat-based systems)
+if command -v rpm &> /dev/null; then
+  RELEASE=$(rpm -q --queryformat '%{release}' check-mk-agent)
+  cmk-agent-update -v
+  NEW_RELEASE=$(rpm -q --queryformat '%{release}' check-mk-agent)
+# Check if dpkg is available (for Debian-based systems)
+elif command -v dpkg &> /dev/null; then
+  RELEASE=$(dpkg -s check-mk-agent | grep Version | awk '{print $2}')
+  cmk-agent-update -v
+  NEW_RELEASE=$(dpkg -s check-mk-agent | grep Version | awk '{print $2}')
+else
+  echo "Unsupported package manager"
+  exit 1
+fi
+
+if [ "$RELEASE" != "$NEW_RELEASE" ]; then
+  echo "Release updated: $RELEASE -> $NEW_RELEASE"
+  # Use a more generic path or check for OS-specific paths
+  AGENT_PATH="/usr/lib/check_mk_agent"
+  [ -d "$AGENT_PATH" ] && {
+    chmod -R 755 "$AGENT_PATH/local/*"
+    chmod -R 755 "$AGENT_PATH/plugins/*"
+    chmod -R 755 "$AGENT_PATH/sudo/*"
+  } || echo "Check_mk agent path not found"
+else
+  echo "No change in release version: $RELEASE"
+fi
