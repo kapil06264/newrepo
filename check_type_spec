@@ -1,0 +1,50 @@
+require 'spec_helper'
+
+describe 'check_mk_agent_type fact' do
+  subject(:fact) { Facter.fact(:check_mk_agent_type).value }
+
+  before :each do
+    Facter.clear
+    allow(Facter).to receive(:timeout).and_return(2)
+  end
+
+  context 'when check-mk-agent is installed with version 1.6' do
+    before :each do
+      allow(Facter::Util::Resolution).to receive(:exec).and_return('1.6')
+    end
+
+    it 'returns true' do
+      expect(fact).to eq(true)
+    end
+  end
+
+  context 'when check-mk-agent is not installed' do
+    before :each do
+      allow(Facter::Util::Resolution).to receive(:exec).and_return(nil)
+    end
+
+    it 'returns false' do
+      expect(fact).to eq(false)
+    end
+  end
+
+  context 'when check-mk-agent is installed with different version' do
+    before :each do
+      allow(Facter::Util::Resolution).to receive(:exec).and_return('1.7')
+    end
+
+    it 'returns false' do
+      expect(fact).to eq(false)
+    end
+  end
+
+  context 'when timeout occurs' do
+    before :each do
+      allow(Facter::Util::Resolution).to receive(:exec).and_raise(Facter::TimeoutError)
+    end
+
+    it 'raises Facter::TimeoutError' do
+      expect { fact }.to raise_error(Facter::TimeoutError)
+    end
+  end
+end
