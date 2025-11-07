@@ -1,0 +1,42 @@
+require 'spec_helper'
+
+describe 'site_info_check fact' do
+  subject(:fact) { Facter.fact(:site_info_check).value }
+
+  before :each do
+    Facter.clear
+    allow(Facter).to receive(:timeout).and_return(2)
+  end
+
+  context 'when /etc/opt/site_info.json exists' do
+    before :each do
+      allow(File).to receive(:exist?).with('/etc/opt/site_info.json').and_return(true)
+      allow(File).to receive(:read).with('/etc/opt/site_info.json').and_return('{"status": "200"}')
+    end
+
+    it 'returns false if "200" is present' do
+      expect(fact).to eq(false)
+    end
+  end
+
+  context 'when /etc/opt/site_info.json exists but does not contain "200"' do
+    before :each do
+      allow(File).to receive(:exist?).with('/etc/opt/site_info.json').and_return(true)
+      allow(File).to receive(:read).with('/etc/opt/site_info.json').and_return('{"status": "404"}')
+    end
+
+    it 'returns true' do
+      expect(fact).to eq(true)
+    end
+  end
+
+  context 'when /etc/opt/site_info.json does not exist' do
+    before :each do
+      allow(File).to receive(:exist?).with('/etc/opt/site_info.json').and_return(false)
+    end
+
+    it 'returns nil or handles absence' do
+      expect(fact).to be_nil
+    end
+  end
+end
