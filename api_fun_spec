@@ -1,0 +1,61 @@
+require 'spec_helper'
+
+describe 'check_mk::get_site_info' do
+  let(:fqdn) { 'example.com' }
+  let(:base_url) { 'checkmk.example.com' }
+  let(:env) { 'prod' }
+
+  before(:each) do
+    # Mock the Net::HTTP request to avoid actual API calls
+    allow(Net::HTTP).to receive(:new).and_return(double('http').as_null_object)
+  end
+
+  describe '#execute' do
+    context 'when API call is successful' do
+      it 'returns site info' do
+        # Mock a successful API response
+        response_double = double('response', body: {
+          'status' => 'active',
+          'site' => 'test_site',
+          'fqdn' => fqdn,
+          'message' => ''
+        }.to_json)
+        allow_any_instance_of(Net::HTTP).to receive(:request).and_return(response_double)
+
+        result = subject.execute(fqdn, base_url, env)
+        expect(result).to eq({
+          'status' => 'active',
+          'site' => 'test_site',
+          'fqdn' => fqdn,
+          'message' => 'No message returned'
+        })
+      end
+    end
+
+    context 'when API response is invalid JSON' do
+      it 'handles JSON parsing error' do
+        # Mock an API response with invalid JSON
+        response_double = double('response', body: 'Invalid JSON', code: '200')
+        allow_any_instance_of(Net::HTTP).to receive(:request).and_return(response_double)
+
+        result = subject.execute(fqdn, base_url, env)
+        expect(result).to eq({
+          'status' => '200',
+          'site' => '',
+          'fqdn' => fqdn,
+          'message' => 'Failed to parse response. Invalid JSON'
+        })
+      end
+    end
+
+    context 'when making API call' do
+      it 'makes the correct API call' do
+        # Verify the API URL and parameters
+        expect(Net::HTTP).to receive(:new).with('checkmk.example.com', 443).and_return(double('http').as_null_object)
+        expect_any_instance_of(Net::HTTP).to receive(:request).with(an_instance_of(Net::HTTP::Get)).and_return(double('response', body: {}.to_json))
+
+        subject.execute(fqdn, base_url, env)
+      end
+    end
+  end
+end
