@@ -1,0 +1,48 @@
+require 'spec_helper'
+require 'facter'
+
+describe 'check_mk_api_status fact' do
+  let(:fact) { Facter.value(:check_mk_api_status) }
+
+  before do
+    Facter.clear
+  end
+
+  context 'when /etc/opt/site_info.json exists' do
+    before do
+      allow(File).to receive(:exist?).with('/etc/opt/site_info.json').and_return(true)
+      allow(File).to receive(:read).with('/etc/opt/site_info.json').and_return('{"host_exists": true, "fqdn": "example.com", "site": "test_site", "status": "active"}')
+    end
+
+    it 'returns the parsed data' do
+      expect(fact).to eq({
+        'host_exists' => true,
+        'fqdn' => 'example.com',
+        'site' => 'test_site',
+        'status' => 'active'
+      })
+    end
+  end
+
+  context 'when /etc/opt/site_info.json does not exist' do
+    before do
+      allow(File).to receive(:exist?).with('/etc/opt/site_info.json').and_return(false)
+    end
+
+    it 'does not resolve the fact' do
+      expect(fact).to be_nil
+    end
+  end
+
+  context 'when an error occurs reading/parsing the file' do
+    before do
+      allow(File).to receive(:exist?).with('/etc/opt/site_info.json').and_return(true)
+      allow(File).to receive(:read).with('/etc/opt/site_info.json').and_raise(StandardError, 'test error')
+    end
+
+    it 'logs a debug message and returns nil' do
+      expect(Facter).to receive(:debug).with('checkmk_status fact error: test error')
+      expect(fact).to be_nil
+    end
+  end
+end
