@@ -21,8 +21,10 @@ describe 'check_mk::get_site_info' do
       }.to_json
     end
 
+    let(:response) { instance_double(Net::HTTPOK, body: response_body, code: '200') }
+
     before(:each) do
-      allow(Net::HTTP).to receive(:get_response).and_return(double(body: response_body, code: '200'))
+      allow(Net::HTTP).to receive(:get_response).and_return(response)
     end
 
     it 'returns the expected hash' do
@@ -38,8 +40,10 @@ describe 'check_mk::get_site_info' do
   context 'when API returns invalid JSON' do
     let(:response_body) { 'Invalid JSON' }
 
+    let(:response) { instance_double(Net::HTTPOK, body: response_body, code: '200') }
+
     before(:each) do
-      allow(Net::HTTP).to receive(:get_response).and_return(double(body: response_body, code: '200'))
+      allow(Net::HTTP).to receive(:get_response).and_return(response)
     end
 
     it 'returns an error hash' do
@@ -53,8 +57,10 @@ describe 'check_mk::get_site_info' do
   end
 
   context 'when API returns an error' do
+    let(:response) { instance_double(Net::HTTPInternalServerError, body: '', code: '500') }
+
     before(:each) do
-      allow(Net::HTTP).to receive(:get_response).and_return(double(body: '', code: '500'))
+      allow(Net::HTTP).to receive(:get_response).and_return(response)
     end
 
     it 'returns an error hash' do
