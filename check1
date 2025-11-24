@@ -1,0 +1,66 @@
+require 'spec_helper'
+require 'puppet/functions/get_site_info'
+
+describe 'get_site_info' do
+  let(:fqdn) { 'example.com' }
+  let(:base_url) { 'api.example.net' }
+  let(:uri) { "https://#{base_url}/api/1.0/get_site_info?host_name=#{fqdn}&env=lab&format=json" }
+
+  it { is_expected.to run.with_params(fqdn, base_url).and_return_a_kind_of(Hash) }
+
+  context 'when API returns valid JSON' do
+    let(:response_body) do
+      {
+        'status' => 'success',
+        'site' => 'example-site',
+        'fqdn' => fqdn,
+        'message' => 'Site info retrieved successfully'
+      }.to_json
+    end
+
+    before(:each) do
+      stub_request(:get, uri).to_return(status: 200, body: response_body, headers: { 'Content-Type' => 'application/json' })
+    end
+
+    it 'returns the expected hash' do
+      is_expected.to run.with_params(fqdn, base_url).and_return(
+        'status' => 'success',
+        'site' => 'example-site',
+        'fqdn' => fqdn,
+        'message' => 'Site info retrieved successfully'
+      )
+    end
+  end
+
+  context 'when API returns invalid JSON' do
+    let(:response_body) { 'Invalid JSON' }
+
+    before(:each) do
+      stub_request(:get, uri).to_return(status: 200, body: response_body, headers: { 'Content-Type' => 'application/json' })
+    end
+
+    it 'returns an error hash' do
+      is_expected.to run.with_params(fqdn, base_url).and_return(
+        'status' => 200,
+        'site' => '',
+        'fqdn' => fqdn,
+        'message' => /Failed to parse response/
+      )
+    end
+  end
+
+  context 'when API returns an error' do
+    before(:each) do
+      stub_request(:get, uri).to_return(status: 500, body: '', headers: {})
+    end
+
+    it 'returns an error hash' do
+      is_expected.to run.with_params(fqdn, base_url).and_return(
+        'status' => 500,
+        'site' => '',
+        'fqdn' => fqdn,
+        'message' => /Failed to parse response/
+      )
+    end
+  end
+end
