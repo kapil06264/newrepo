@@ -1,14 +1,15 @@
 require 'spec_helper'
 require 'puppet/functions/check_mk/get_site_info'
-require 'webmock/rspec'
+require 'net/http'
+require 'uri'
 
 describe 'check_mk::get_site_info' do
   let(:fqdn) { 'example.com' }
   let(:base_url) { 'api.example.net' }
   let(:env) { 'prod' }
-  let(:uri) { "https://#{base_url}/api/1.0/get_site_info?host_name=#{fqdn}&env=#{env}&format=json" }
+  let(:uri) { URI("https://#{base_url}/api/1.0/get_site_info?host_name=#{fqdn}&env=#{env}&format=json") }
 
-  it { is_expected.to run.with_params(fqdn, base_url, env).and_return(a_kind_of(Hash)) }
+  it { is_expected.to run.with_params(fqdn, base_url, env).and_return_a_kind_of(Hash) }
 
   context 'when API returns valid JSON' do
     let(:response_body) do
@@ -21,7 +22,7 @@ describe 'check_mk::get_site_info' do
     end
 
     before(:each) do
-      WebMock.stub_request(:get, uri).to_return(status: 200, body: response_body, headers: { 'Content-Type' => 'application/json' })
+      allow(Net::HTTP).to receive(:get_response).and_return(double(body: response_body, code: '200'))
     end
 
     it 'returns the expected hash' do
@@ -38,7 +39,7 @@ describe 'check_mk::get_site_info' do
     let(:response_body) { 'Invalid JSON' }
 
     before(:each) do
-      WebMock.stub_request(:get, uri).to_return(status: 200, body: response_body, headers: { 'Content-Type' => 'application/json' })
+      allow(Net::HTTP).to receive(:get_response).and_return(double(body: response_body, code: '200'))
     end
 
     it 'returns an error hash' do
@@ -53,7 +54,7 @@ describe 'check_mk::get_site_info' do
 
   context 'when API returns an error' do
     before(:each) do
-      WebMock.stub_request(:get, uri).to_return(status: 500, body: '', headers: {})
+      allow(Net::HTTP).to receive(:get_response).and_return(double(body: '', code: '500'))
     end
 
     it 'returns an error hash' do
