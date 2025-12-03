@@ -2,9 +2,7 @@
 require 'spec_helper'
 require 'puppet/functions/check_mk/get_site_info'
 
-describe 'check_mk::get_site_info' do
-  subject(:function) { described_class.new }
-
+describe Puppet::Functions::CheckMk::GetSiteInfo do
   let(:fqdn) { 'example.com' }
   let(:base_url) { 'https://checkmk.example.com' }
   let(:env) { 'prod' }
