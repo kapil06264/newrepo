@@ -3,11 +3,11 @@ require 'spec_helper'
 require 'puppet/functions/check_mk/get_site_info'
 
 describe 'check_mk::get_site_info' do
+  subject(:function) { described_class.new }
+
   let(:fqdn) { 'example.com' }
   let(:base_url) { 'https://checkmk.example.com' }
   let(:env) { 'prod' }
-
-  subject(:function) { described_class.new }
 
   it 'returns a hash with site information' do
     stub_request(:get, "#{base_url}/#{env}/check_mk/api/1.0/site/#{fqdn}")
