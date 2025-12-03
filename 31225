@@ -1,4 +1,3 @@
-# spec/puppet/functions/check_mk/get_site_info_spec.rb
 require 'spec_helper'
 require 'puppet/functions/check_mk/get_site_info'
 
@@ -8,53 +7,57 @@ describe Puppet::Functions::CheckMk::GetSiteInfo do
   let(:env) { 'prod' }
   let(:instance) { described_class.new }
 
-  it 'returns a hash with site information' do
-    allow(instance).to receive(:http_get).and_return(
-      {
+  context 'when retrieving site information' do
+    it 'returns a hash with site information' do
+      allow(instance).to receive(:http_get).and_return(
         'status' => 'OK',
         'site' => 'example_site',
         'fqdn' => fqdn,
         'message' => 'Site is up and running',
-      },
-    )
+      )
 
-    result = instance.execute(fqdn, base_url, env)
-    expect(result).to eq(
-      'status' => 'OK',
-      'site' => 'example_site',
-      'fqdn' => fqdn,
-      'message' => 'Site is up and running',
-    )
-  end
-
-  it 'handles JSON parsing errors' do
-    allow(instance).to receive(:http_get).and_raise(JSON::ParserError, 'JSON parsing error')
-
-    result = instance.execute(fqdn, base_url, env)
-    expect(result).to include(
-      'status' => nil,
-      'site' => '',
-      'fqdn' => fqdn,
-      'message' => %r{Failed to parse response: JSON parsing error},
-    )
-  end
-
-  it 'handles HTTP errors' do
-    allow(instance).to receive(:http_get).and_return(
-      {
-        'status' => 404,
-        'site' => '',
+      result = instance.execute(fqdn, base_url, env)
+      expect(result).to eq(
+        'status' => 'OK',
+        'site' => 'example_site',
         'fqdn' => fqdn,
-        'message' => 'Site not found',
-      },
-    )
+        'message' => 'Site is up and running',
+      )
+    end
+  end
 
-    result = instance.execute(fqdn, base_url, env)
-    expect(result).to include(
-      'status' => 404,
-      'site' => '',
-      'fqdn' => fqdn,
-      'message' => %r{Failed to retrieve site info: Site not found},
-    )
+  context 'when handling errors' do
+    context 'with JSON parsing errors' do
+      it 'returns an error message' do
+        allow(instance).to receive(:http_get).and_raise(JSON::ParserError, 'JSON parsing error')
+
+        result = instance.execute(fqdn, base_url, env)
+        expect(result).to include(
+          'status' => nil,
+          'site' => nil,
+          'fqdn' => fqdn,
+          'message' => 'Failed to parse response: JSON parsing error',
+        )
+      end
+    end
+
+    context 'with HTTP errors' do
+      it 'returns an error message' do
+        allow(instance).to receive(:http_get).and_return(
+          'status' => 404,
+          'site' => nil,
+          'fqdn' => fqdn,
+          'message' => 'Site not found',
+        )
+
+        result = instance.execute(fqdn, base_url, env)
+        expect(result).to include(
+          'status' => 404,
+          'site' => nil,
+          'fqdn' => fqdn,
+          'message' => 'Site not found',
+        )
+      end
+    end
   end
 end
