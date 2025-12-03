@@ -8,18 +8,19 @@ describe 'check_mk::get_site_info' do
   let(:fqdn) { 'example.com' }
   let(:base_url) { 'https://checkmk.example.com' }
   let(:env) { 'prod' }
+  let(:instance) { described_class.new }
 
   it 'returns a hash with site information' do
-    allow_any_instance_of(described_class).to receive(:http_get).and_return(
+    allow(instance).to receive(:http_get).and_return(
       {
         'status' => 'OK',
         'site' => 'example_site',
         'fqdn' => fqdn,
         'message' => 'Site is up and running',
-      }
+      },
     )
 
-    result = function.execute(fqdn, base_url, env)
+    result = instance.execute(fqdn, base_url, env)
     expect(result).to eq(
       'status' => 'OK',
       'site' => 'example_site',
@@ -29,9 +30,9 @@ describe 'check_mk::get_site_info' do
   end
 
   it 'handles JSON parsing errors' do
-    allow_any_instance_of(described_class).to receive(:http_get).and_raise(JSON::ParserError, 'JSON parsing error')
+    allow(instance).to receive(:http_get).and_raise(JSON::ParserError, 'JSON parsing error')
 
-    result = function.execute(fqdn, base_url, env)
+    result = instance.execute(fqdn, base_url, env)
     expect(result).to include(
       'status' => nil,
       'site' => '',
@@ -41,16 +42,16 @@ describe 'check_mk::get_site_info' do
   end
 
   it 'handles HTTP errors' do
-    allow_any_instance_of(described_class).to receive(:http_get).and_return(
+    allow(instance).to receive(:http_get).and_return(
       {
         'status' => 404,
         'site' => '',
         'fqdn' => fqdn,
         'message' => 'Site not found',
-      }
+      },
     )
 
-    result = function.execute(fqdn, base_url, env)
+    result = instance.execute(fqdn, base_url, env)
     expect(result).to include(
       'status' => 404,
       'site' => '',
