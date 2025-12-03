@@ -1,6 +1,7 @@
 # spec/unit/functions/get_site_info_spec.rb
 require 'spec_helper'
 require 'puppet/functions/check_mk/get_site_info'
+require 'webmock/rspec'
 
 describe 'check_mk::get_site_info' do
   subject(:function) { described_class.new }
