@@ -1,0 +1,62 @@
+# spec/unit/functions/get_site_info_spec.rb
+require 'spec_helper'
+require 'puppet/functions/check_mk/get_site_info'
+
+describe 'check_mk::get_site_info' do
+  let(:fqdn) { 'example.com' }
+  let(:base_url) { 'https://checkmk.example.com' }
+  let(:env) { 'prod' }
+
+  it 'returns a hash with site information' do
+    stub_request(:get, "#{base_url}/#{env}/check_mk/api/1.0/site/#{fqdn}")
+      .to_return(
+        status: 200,
+        body: {
+          status: 'OK',
+          site: 'example_site',
+          fqdn: fqdn,
+          message: 'Site is up and running'
+        }.to_json
+      )
+
+    result = subject.execute(fqdn, base_url, env)
+    expect(result).to eq(
+      'status' => 'OK',
+      'site' => 'example_site',
+      'fqdn' => fqdn,
+      'message' => 'Site is up and running'
+    )
+  end
+
+  it 'handles JSON parsing errors' do
+    stub_request(:get, "#{base_url}/#{env}/check_mk/api/1.0/site/#{fqdn}")
+      .to_return(
+        status: 200,
+        body: 'Invalid JSON'
+      )
+
+    result = subject.execute(fqdn, base_url, env)
+    expect(result).to include(
+      'status' => 200,
+      'site' => '',
+      'fqdn' => fqdn,
+      'message' => /Failed to parse response/
+    )
+  end
+
+  it 'handles HTTP errors' do
+    stub_request(:get, "#{base_url}/#{env}/check_mk/api/1.0/site/#{fqdn}")
+      .to_return(
+        status: 404,
+        body: 'Not Found'
+      )
+
+    result = subject.execute(fqdn, base_url, env)
+    expect(result).to include(
+      'status' => 404,
+      'site' => '',
+      'fqdn' => fqdn,
+      'message' => /Failed to parse response/
+    )
+  end
+end
