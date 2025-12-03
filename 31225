@@ -1,7 +1,6 @@
 # spec/unit/functions/get_site_info_spec.rb
 require 'spec_helper'
 require 'puppet/functions/check_mk/get_site_info'
-require 'webmock/rspec'
 
 describe 'check_mk::get_site_info' do
   subject(:function) { described_class.new }
@@ -11,16 +10,14 @@ describe 'check_mk::get_site_info' do
   let(:env) { 'prod' }
 
   it 'returns a hash with site information' do
-    stub_request(:get, "#{base_url}/#{env}/check_mk/api/1.0/site/#{fqdn}")
-      .to_return(
-        status: 200,
-        body: {
-          status: 'OK',
-          site: 'example_site',
-          fqdn: fqdn,
-          message: 'Site is up and running',
-        }.to_json,
-      )
+    allow_any_instance_of(described_class).to receive(:http_get).and_return(
+      {
+        'status' => 'OK',
+        'site' => 'example_site',
+        'fqdn' => fqdn,
+        'message' => 'Site is up and running',
+      }
+    )
 
     result = function.execute(fqdn, base_url, env)
     expect(result).to eq(
@@ -32,34 +29,33 @@ describe 'check_mk::get_site_info' do
   end
 
   it 'handles JSON parsing errors' do
-    stub_request(:get, "#{base_url}/#{env}/check_mk/api/1.0/site/#{fqdn}")
-      .to_return(
-        status: 200,
-        body: 'Invalid JSON',
-      )
+    allow_any_instance_of(described_class).to receive(:http_get).and_raise(JSON::ParserError, 'JSON parsing error')
 
     result = function.execute(fqdn, base_url, env)
     expect(result).to include(
-      'status' => 200,
+      'status' => nil,
       'site' => '',
       'fqdn' => fqdn,
-      'message' => %r{Failed to parse response},
+      'message' => %r{Failed to parse response: JSON parsing error},
     )
   end
 
   it 'handles HTTP errors' do
-    stub_request(:get, "#{base_url}/#{env}/check_mk/api/1.0/site/#{fqdn}")
-      .to_return(
-        status: 404,
-        body: 'Not Found',
-      )
+    allow_any_instance_of(described_class).to receive(:http_get).and_return(
+      {
+        'status' => 404,
+        'site' => '',
+        'fqdn' => fqdn,
+        'message' => 'Site not found',
+      }
+    )
 
     result = function.execute(fqdn, base_url, env)
     expect(result).to include(
       'status' => 404,
       'site' => '',
       'fqdn' => fqdn,
-      'message' => %r{Failed to parse response},
+      'message' => %r{Failed to retrieve site info: Site not found},
     )
   end
 end
