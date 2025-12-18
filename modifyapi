@@ -1,0 +1,62 @@
+require 'puppet'
+require 'net/http'
+require 'uri'
+require 'json'
+
+Puppet::Functions.create_function(:'check_mk::get_site_info') do
+  dispatch :fetch_site_info do
+    param 'String', :fqdn
+    param 'String', :base_url
+    param 'String', :env
+  end
+
+  def fetch_site_info(fqdn, base_url, env)
+    api_url = "#{base_url}/api/site_info?fqdn=#{fqdn}&env=#{env}"
+    uri = URI.parse(api_url)
+
+    begin
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      http.read_timeout = 30
+
+      request = Net::HTTP::Get.new(uri.request_uri)
+      response = http.request(request)
+
+      case response
+      when Net::HTTPSuccess
+        json = JSON.parse(response.body)
+        {
+          'status' => json['status'],
+          'site'   => json['site'] || '',
+          'fqdn'   => json['fqdn'] || fqdn,
+          'message' => json['message'] || 'No message returned'
+        }
+      else
+        Puppet.warning("API request to #{uri} failed with code #{response.code}")
+        {
+          'status'  => response.code.to_i,
+          'site'    => '',
+          'fqdn'    => fqdn,
+          'message' => "API request failed with code #{response.code}"
+        }
+      end
+    rescue Net::OpenTimeout, Net::ReadTimeout => e
+      Puppet.warning("API request to #{uri} timed out: #{e.message}")
+      {
+        'status'  => 500,
+        'site'    => '',
+        'fqdn'    => fqdn,
+        'message' => "API request timed out: #{e.message}"
+      }
+    rescue => e
+      Puppet.warning("API request to #{uri} failed: #{e.message}")
+      {
+        'status'  => 500,
+        'site'    => '',
+        'fqdn'    => fqdn,
+        'message' => "API request failed: #{e.message}"
+      }
+    end
+  end
+end
