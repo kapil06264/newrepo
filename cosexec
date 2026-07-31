@@ -1,0 +1,10 @@
+# 2. THE STOP TRIGGER: This is an exec command that runs ONLY when 
+  # a package upgrade is actively happening. 
+  # Because it is 'refreshonly', it remains 100% idle on the next Puppet run.
+  exec { 'stop_cos_agent_for_upgrade':
+    command     => '/usr/bin/systemctl stop cos-managed-agent',
+    refreshonly => true,
+    subscribe   => Package['cos-managed-agent'], # Listens to the package change
+    before      => Package['cos-managed-agent'],  # Ensures it executes BEFORE the package unzips
+    path        => ['/usr/bin', '/usr/sbin', '/bin'],
+  }
