@@ -1,0 +1,25 @@
+class cos_agent (
+  String $version = 'latest',
+) {
+
+  # Now you can use the custom fact
+  if $facts['cos_managed_agent_installed'] {
+    service { 'cos-managed-agent-stop-for-upgrade':
+      ensure => 'stopped',
+      name   => 'cos-managed-agent',
+      before => Package['cos-managed-agent'],
+    }
+  }
+
+  package { 'cos-managed-agent':
+    ensure => $version,
+  }
+
+  exec { 'enable_and_start_cos_managed_agent':
+    command     => '/usr/bin/systemctl enable --now cos-managed-agent',
+    refreshonly => true, 
+    subscribe   => Package['cos-managed-agent'], 
+    path        => ['/usr/bin', '/usr/sbin', '/bin'],
+    require     => Class['cos_agent::facts'], # make sure fact exists first
+  }
+}
