@@ -1,0 +1,29 @@
+class cos_agent (
+  String $version = 'latest',
+) {
+
+  # 1. STOP TRIGGER: Runs only if the package resource detects an upgrade is needed.
+  # If the service does not exist yet (first install), Puppet considers it 
+  # successfully 'stopped' and moves on without failing.
+  service { 'cos-agent-stop-for-upgrade':
+    ensure     => 'stopped',
+    name       => 'cos-managed-agent',
+    hasstatus  => true,
+    hasrestart => true,
+    notify     => Package['cos-managed-agent'], 
+  }
+
+  # 2. THE PACKAGE: Manages the software installation or upgrade.
+  package { 'cos-managed-agent':
+    ensure => $version,
+  }
+
+  # 3. SERVICE START: Executes only when triggered by a fresh install or upgrade.
+  # It safely turns the service back on immediately after the package changes.
+  exec { 'enable_and_start_cos_managed_agent':
+    command     => '/usr/bin/systemctl enable --now cos-managed-agent',
+    refreshonly => true, 
+    subscribe   => Package['cos-managed-agent'], 
+    path        => ['/usr/bin', '/usr/sbin', '/bin'],
+  }
+}
