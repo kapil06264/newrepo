@@ -1,0 +1,32 @@
+Facter.add(:cos_managed_agent_upgrade_needed) do
+  confine :kernel => 'Linux'
+  setcode do
+    # Path to the dummy file written by the manifest
+    dummy_file = '/opt/puppetlabs/facter/facts.d/cos_agent_target_version.txt'
+    
+    if !File.exist?(dummy_file)
+      false # If the file isn't created yet (first run), default to false
+    else
+      # 1. Read the provided target version from the dummy file
+      target_version = File.read(dummy_file).strip
+      
+      # 2. Get the currently installed version on the system
+      installed_version = nil
+      if Facter::Util::Resolution.which('rpm')
+        res = Facter::Core::Execution.execute("rpm -q --qf '%{VERSION}' cos-managed-agent 2>/dev/null")
+        installed_version = res.include?('not installed') ? 'absent' : res.strip
+      elsif Facter::Util::Resolution.which('dpkg-query')
+        res = Facter::Core::Execution.execute("dpkg-query -W -f='${Version}' cos-managed-agent 2>/dev/null")
+        installed_version = res.empty? ? 'absent' : res.strip
+      end
+
+      # 3. EVALUATE YOUR LOGIC:
+      # Returns true ONLY if the package is installed AND its version does not match the target version.
+      if installed_version != 'absent' && installed_version != target_version
+        true
+      else
+        false
+      end
+    end
+  end
+end
