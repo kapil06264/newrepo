@@ -1,2 +1,9 @@
-
-#1st co
+if $facts['cos_managed_agent_upgrade_needed'] == true {
+    
+    service { 'cos-agent-stop-for-upgrade':
+      ensure  => 'stopped',
+      name    => 'cos-managed-agent',
+      before  => Package['cos-managed-agent'],
+      require => File['/opt/puppetlabs/facter/facts.d/cos_agent_target_version.txt'],
+    }
+}
