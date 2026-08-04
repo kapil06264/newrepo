@@ -1,0 +1,15 @@
+package { ['ctxvda', 'vasd']:
+  ensure => installed,
+}
+
+systemd::dropin_file { 'ctxvda_vasd_dependency':
+  unit => 'ctxvda.service',
+  filename => 'vasd.conf',
+  content => @("EOF"),
+    [Unit]
+    Wants=vasd.service
+    After=network-online.target vasd.service
+    | EOF
+  require => Package['ctxvda', 'vasd'], # <-- this is the key
+  notify => Service['ctxvda'],
+}
